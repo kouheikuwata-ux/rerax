@@ -43,6 +43,7 @@ export async function generateProposal(): Promise<PlannerResult> {
       id: f.id,
       userId: f.userId,
       date: f.date,
+      area: f.area,
       title: f.title,
       duration: f.duration,
       load: f.load,
