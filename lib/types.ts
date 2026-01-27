@@ -224,7 +224,7 @@ export type CreateReflectionLog = z.infer<typeof CreateReflectionLogSchema>
 // Mind Map Node
 // ============================================
 
-export const MindMapNodeTypeSchema = z.enum(['mindMapNode', 'stickyNote', 'section'])
+export const MindMapNodeTypeSchema = z.enum(['mindMapNode', 'stickyNote', 'section', 'image'])
 export type MindMapNodeType = z.infer<typeof MindMapNodeTypeSchema>
 
 export const MindMapNodeSchema = z.object({
@@ -239,6 +239,7 @@ export const MindMapNodeSchema = z.object({
   width: z.number().nullable(),
   height: z.number().nullable(),
   color: z.string(),
+  imageUrl: z.string().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 })
@@ -255,6 +256,7 @@ export const CreateMindMapNodeSchema = z.object({
   width: z.number().optional(),
   height: z.number().optional(),
   color: z.string().optional(),
+  imageUrl: z.string().optional(),
 })
 export type CreateMindMapNode = z.infer<typeof CreateMindMapNodeSchema>
 
@@ -267,6 +269,7 @@ export const UpdateMindMapNodeSchema = z.object({
   width: z.number().nullable().optional(),
   height: z.number().nullable().optional(),
   color: z.string().optional(),
+  imageUrl: z.string().nullable().optional(),
 })
 export type UpdateMindMapNode = z.infer<typeof UpdateMindMapNodeSchema>
 

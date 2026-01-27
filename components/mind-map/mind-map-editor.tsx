@@ -18,15 +18,17 @@ import {
 import { CustomNode, MindMapNodeData, MindMapContext } from './custom-node'
 import { StickyNoteNode, StickyNoteData } from './sticky-note-node'
 import { SectionNode, SectionNodeData } from './section-node'
+import { ImageNode, ImageNodeData } from './image-node'
 import { MindMapNode } from '@/lib/types'
 
-type FlowNodeData = MindMapNodeData | StickyNoteData | SectionNodeData
+type FlowNodeData = MindMapNodeData | StickyNoteData | SectionNodeData | ImageNodeData
 type FlowNode = Node<FlowNodeData>
 
 const nodeTypes = {
   mindMapNode: CustomNode,
   stickyNote: StickyNoteNode,
   section: SectionNode,
+  image: ImageNode,
 }
 
 interface MindMapEditorProps {
@@ -41,6 +43,7 @@ interface MindMapEditorProps {
     width?: number | null
     height?: number | null
     color: string
+    imageUrl?: string | null
   }>) => Promise<MindMapNode[]>
   saving: boolean
 }
@@ -71,6 +74,7 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
         color: node.color,
         width: node.width,
         height: node.height,
+        imageUrl: node.imageUrl,
       },
     }))
 
@@ -282,6 +286,39 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
     markChanged()
   }, [setNodes, markChanged])
 
+  const handleAddImage = useCallback(() => {
+    const newId = generateId()
+    const newNode: FlowNode = {
+      id: newId,
+      type: 'image',
+      position: { x: 150, y: 100 },
+      data: {
+        label: '',
+        color: '#f9fafb',
+        width: 200,
+        height: 150,
+        imageUrl: null,
+      },
+    }
+
+    setNodes((nds) => [...nds, newNode])
+    markChanged()
+  }, [setNodes, markChanged])
+
+  const handleImageChange = useCallback(
+    (nodeId: string, imageUrl: string | null) => {
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, imageUrl } }
+            : node
+        )
+      )
+      markChanged()
+    },
+    [setNodes, markChanged]
+  )
+
   const handleSave = useCallback(async () => {
     // Build parentId map from edges
     const parentMap = new Map<string, string>()
@@ -296,9 +333,10 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
       label: node.data.label || '',
       positionX: node.position.x,
       positionY: node.position.y,
-      width: node.measured?.width ?? node.width ?? (node.data as StickyNoteData | SectionNodeData).width ?? null,
-      height: node.measured?.height ?? node.height ?? (node.data as StickyNoteData | SectionNodeData).height ?? null,
+      width: node.measured?.width ?? node.width ?? (node.data as StickyNoteData | SectionNodeData | ImageNodeData).width ?? null,
+      height: node.measured?.height ?? node.height ?? (node.data as StickyNoteData | SectionNodeData | ImageNodeData).height ?? null,
       color: node.data.color,
+      imageUrl: (node.data as ImageNodeData).imageUrl ?? null,
     }))
 
     const savedNodes = await onSave(nodesToSave)
@@ -339,8 +377,9 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
       onColorChange: handleColorChange,
       onDelete: handleDeleteNode,
       onAddChild: handleAddChild,
+      onImageChange: handleImageChange,
     }),
-    [handleLabelChange, handleColorChange, handleDeleteNode, handleAddChild]
+    [handleLabelChange, handleColorChange, handleDeleteNode, handleAddChild, handleImageChange]
   )
 
   return (
@@ -404,6 +443,18 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
             <path d="M3 9h18" />
           </svg>
           セクション
+        </button>
+        <button
+          onClick={handleAddImage}
+          className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-md flex items-center gap-2 text-sm"
+          title="画像を追加"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+          </svg>
+          画像
         </button>
       </div>
 

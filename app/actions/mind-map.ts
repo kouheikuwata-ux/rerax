@@ -52,6 +52,7 @@ export async function saveMindMap(
     width?: number | null
     height?: number | null
     color: string
+    imageUrl?: string | null
   }>
 ): Promise<MindMapNode[]> {
   await requireAuth()

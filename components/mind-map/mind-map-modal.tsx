@@ -91,6 +91,7 @@ export function MindMapModal({
         width?: number | null
         height?: number | null
         color: string
+        imageUrl?: string | null
       }>
     ): Promise<MindMapNode[]> => {
       setSaving(true)

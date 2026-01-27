@@ -66,6 +66,7 @@ export async function saveMindMapNodes(
     width?: number | null
     height?: number | null
     color: string
+    imageUrl?: string | null
   }>
 ): Promise<MindMapNode[]> {
   // Get existing node IDs
@@ -102,6 +103,7 @@ export async function saveMindMapNodes(
           width: node.width ?? null,
           height: node.height ?? null,
           color: node.color,
+          imageUrl: node.imageUrl ?? null,
         },
       })
       results.push({
@@ -122,6 +124,7 @@ export async function saveMindMapNodes(
           width: node.width ?? null,
           height: node.height ?? null,
           color: node.color,
+          imageUrl: node.imageUrl ?? null,
         },
       })
       results.push({

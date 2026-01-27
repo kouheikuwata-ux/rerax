@@ -14,6 +14,7 @@ interface MindMapContextValue {
   onColorChange: (nodeId: string, color: string) => void
   onDelete: (nodeId: string) => void
   onAddChild: (nodeId: string) => void
+  onImageChange?: (nodeId: string, imageUrl: string | null) => void
 }
 
 export const MindMapContext = createContext<MindMapContextValue | null>(null)
