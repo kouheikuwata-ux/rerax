@@ -33,7 +33,7 @@ interface MindMapEditorProps {
     positionX: number
     positionY: number
     color: string
-  }>) => Promise<void>
+  }>) => Promise<MindMapNode[]>
   saving: boolean
 }
 
@@ -248,9 +248,37 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
       color: node.data.color,
     }))
 
-    await onSave(nodesToSave)
+    const savedNodes = await onSave(nodesToSave)
+
+    // Update local state with real IDs from server
+    // Map old temp IDs to new real IDs based on position order
+    const oldIds = nodes.map(n => n.id)
+    const newIds = savedNodes.map(n => n.id)
+    const idMap = new Map<string, string>()
+    oldIds.forEach((oldId, index) => {
+      if (oldId.startsWith('temp_') && newIds[index]) {
+        idMap.set(oldId, newIds[index])
+      }
+    })
+
+    // Update nodes with new IDs
+    if (idMap.size > 0) {
+      setNodes(nds => nds.map(node => {
+        const newId = idMap.get(node.id)
+        return newId ? { ...node, id: newId } : node
+      }))
+
+      // Update edges with new IDs
+      setEdges(eds => eds.map(edge => ({
+        ...edge,
+        id: `edge_${idMap.get(edge.source) ?? edge.source}_${idMap.get(edge.target) ?? edge.target}`,
+        source: idMap.get(edge.source) ?? edge.source,
+        target: idMap.get(edge.target) ?? edge.target,
+      })))
+    }
+
     setHasChanges(false)
-  }, [nodes, edges, onSave])
+  }, [nodes, edges, onSave, setNodes, setEdges])
 
   const contextValue = useMemo(
     () => ({

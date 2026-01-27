@@ -89,11 +89,12 @@ export function MindMapModal({
         positionY: number
         color: string
       }>
-    ) => {
+    ): Promise<MindMapNode[]> => {
       setSaving(true)
       try {
         const savedNodes = await saveMindMap(entityType, entityId, nodesToSave)
         setNodes(savedNodes)
+        return savedNodes
       } finally {
         setSaving(false)
       }
