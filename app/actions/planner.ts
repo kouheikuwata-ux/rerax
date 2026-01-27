@@ -26,8 +26,10 @@ export async function generateProposal(): Promise<PlannerResult> {
       id: t.id,
       userId: t.userId,
       month: t.month,
+      area: t.area,
       title: t.title,
       order: t.order,
+      yearlyGoalId: t.yearlyGoalId,
     })),
     weekPlan: weekPlan
       ? {
