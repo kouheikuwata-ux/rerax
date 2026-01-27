@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// 年間ビジョン (Yearly vision/goals)
+model YearlyVision {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  year      Int      // 2024, 2025, etc.
+  area      String   @default("private") // work, private
+  title     String   // メインビジョン
+  keywords  String?  // カンマ区切りのキーワード
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  goals YearlyGoal[]
+
+  @@unique([userId, year, area])
+  @@index([userId])
+  @@map("yearly_visions")
+}
+
+// 年間目標 (Yearly goals - 年間ビジョンの下位)
+model YearlyGoal {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  year      Int
+  area      String   @default("private") // work, private
+  title     String
+  order     Int      @default(0)
+  visionId  String?  @map("vision_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  vision      YearlyVision? @relation(fields: [visionId], references: [id], onDelete: SetNull)
+  monthThemes MonthTheme[]
+
+  @@index([userId, year, area])
+  @@map("yearly_goals")
+}
+
+// 今月のテーマ (Monthly themes - 年間目標の下位)
+model MonthTheme {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  month       String   // YYYY-MM format
+  area        String   @default("private") // work, private
+  title       String
+  order       Int      @default(0)
+  yearlyGoalId String? @map("yearly_goal_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  yearlyGoal YearlyGoal? @relation(fields: [yearlyGoalId], references: [id], onDelete: SetNull)
+  focusItems FocusItem[]
+
+  @@unique([userId, month, area, title])
+  @@index([userId, month, area])
+  @@map("month_themes")
+}
+
+// 週の計画 (Weekly plan with day slots)
+model WeekPlan {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  weekStart String   @map("week_start") // YYYY-MM-DD (Monday)
+  weekMap   String   @map("week_map") // JSON string of WeekMap type
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+  @@map("week_plans")
+}
+
+// 今日のフォーカス (Daily focus items)
+model FocusItem {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  date         String    // YYYY-MM-DD
+  area         String    @default("private") // work, private
+  title        String
+  duration     Int       @default(30) // 5, 10, 30, 60 minutes
+  load         Int       @default(3) // 1-5 cognitive load
+  deadlineDate String?   @map("deadline_date") // YYYY-MM-DD
+  themeId      String?   @map("theme_id")
+  intention    String?   // Why this matters today
+  status       String    @default("planned") // planned, done, skipped
+  order        Int       @default(0)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  theme MonthTheme? @relation(fields: [themeId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date, area])
+  @@index([userId, status])
+  @@map("focus_items")
+}
+
+// 振り返りログ (Reflection logs)
+model ReflectionLog {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  date       String   // YYYY-MM-DD
+  result     String   // done, partial, not_done
+  reasonCode String?  @map("reason_code") // too_busy, sick, changed_priority, etc.
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@map("reflection_logs")
+}
