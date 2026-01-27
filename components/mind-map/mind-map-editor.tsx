@@ -15,7 +15,7 @@ import {
   NodeChange,
   ReactFlowProvider,
 } from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
+import '@xyflow/react/dist/base.css'
 import { CustomNode, MindMapNodeData, MindMapContext } from './custom-node'
 import { MindMapNode } from '@/lib/types'
 
