@@ -15,7 +15,7 @@ export async function generateProposal(): Promise<PlannerResult> {
 
   // Gather current state
   const [monthThemes, weekPlan, recentFocusItems, recentReflections] = await Promise.all([
-    getCurrentMonthThemes(userId),
+    getCurrentMonthThemes(userId, 'private'),
     getCurrentWeekPlan(userId),
     getRecentFocusItems(userId, 7),
     getRecentReflections(userId, 3),
