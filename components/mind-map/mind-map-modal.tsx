@@ -2,9 +2,22 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { MindMapEditor } from './mind-map-editor'
+import dynamic from 'next/dynamic'
 import { getMindMap, saveMindMap } from '@/app/actions/mind-map'
 import { MindMapNode, EntityType } from '@/lib/types'
+
+// Dynamically import MindMapEditor with no SSR to avoid CSS import issues
+const MindMapEditor = dynamic(
+  () => import('./mind-map-editor').then((mod) => mod.MindMapEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="absolute inset-0 flex items-center justify-center bg-calm-50">
+        <div className="text-calm-500">読み込み中...</div>
+      </div>
+    ),
+  }
+)
 
 interface MindMapModalProps {
   open: boolean
@@ -24,6 +37,22 @@ export function MindMapModal({
   const [nodes, setNodes] = useState<MindMapNode[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [cssLoaded, setCssLoaded] = useState(false)
+
+  // Load React Flow CSS on client side via link tag
+  useEffect(() => {
+    if (open && !cssLoaded) {
+      const linkId = 'xyflow-styles'
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link')
+        link.id = linkId
+        link.rel = 'stylesheet'
+        link.href = 'https://cdn.jsdelivr.net/npm/@xyflow/react@12/dist/style.min.css'
+        document.head.appendChild(link)
+      }
+      setCssLoaded(true)
+    }
+  }, [open, cssLoaded])
 
   useEffect(() => {
     if (open) {
