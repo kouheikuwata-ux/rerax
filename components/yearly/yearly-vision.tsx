@@ -12,9 +12,10 @@ interface YearlyVisionCardProps {
   vision: YearlyVision | null
   year: number
   area: Area
+  onUpdate?: () => void
 }
 
-export function YearlyVisionCard({ vision, year, area }: YearlyVisionCardProps) {
+export function YearlyVisionCard({ vision, year, area, onUpdate }: YearlyVisionCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(vision?.title || '')
   const [keywords, setKeywords] = useState(vision?.keywords || '')
@@ -29,6 +30,7 @@ export function YearlyVisionCard({ vision, year, area }: YearlyVisionCardProps) 
       await setYearlyVision(year, area, title.trim(), keywords.trim() || undefined)
       toast.success('ビジョンを保存しました')
       setIsEditing(false)
+      onUpdate?.()
     } catch (error) {
       toast.error('エラーが発生しました')
     } finally {

@@ -14,9 +14,10 @@ interface YearlyGoalsListProps {
   area: Area
   visionId?: string
   maxItems?: number
+  onUpdate?: () => void
 }
 
-export function YearlyGoalsList({ goals, year, area, visionId, maxItems = 5 }: YearlyGoalsListProps) {
+export function YearlyGoalsList({ goals, year, area, visionId, maxItems = 5, onUpdate }: YearlyGoalsListProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [loading, setLoading] = useState(false)
@@ -34,6 +35,7 @@ export function YearlyGoalsList({ goals, year, area, visionId, maxItems = 5 }: Y
       toast.success('目標を追加しました')
       setNewTitle('')
       setIsAdding(false)
+      onUpdate?.()
     } catch (error) {
       toast.error('エラーが発生しました')
     } finally {
@@ -49,6 +51,7 @@ export function YearlyGoalsList({ goals, year, area, visionId, maxItems = 5 }: Y
       await editYearlyGoal(goalId, editTitle.trim())
       toast.success('更新しました')
       setEditingId(null)
+      onUpdate?.()
     } catch (error) {
       toast.error('エラーが発生しました')
     } finally {
@@ -61,6 +64,7 @@ export function YearlyGoalsList({ goals, year, area, visionId, maxItems = 5 }: Y
     try {
       await removeYearlyGoal(goalId)
       toast('削除しました')
+      onUpdate?.()
     } catch (error) {
       toast.error('エラーが発生しました')
     } finally {

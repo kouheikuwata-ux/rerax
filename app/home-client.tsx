@@ -288,6 +288,7 @@ export function HomeClient({
                 area={area}
                 visionId={yearlyVision?.id}
                 maxItems={5}
+                onUpdate={handleRefresh}
               />
             </CardContent>
           </Card>
@@ -301,7 +302,7 @@ export function HomeClient({
               </div>
             </CardHeader>
             <CardContent>
-              <YearlyVisionCard vision={yearlyVision} year={currentYear} area={area} />
+              <YearlyVisionCard vision={yearlyVision} year={currentYear} area={area} onUpdate={handleRefresh} />
             </CardContent>
           </Card>
 
