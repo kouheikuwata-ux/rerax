@@ -20,12 +20,13 @@ async function main() {
   // Create yearly vision
   const vision = await prisma.yearlyVision.upsert({
     where: {
-      userId_year: { userId, year: currentYear },
+      userId_year_area: { userId, year: currentYear, area: 'private' },
     },
     update: {},
     create: {
       userId,
       year: currentYear,
+      area: 'private',
       title: '心穏やかに、自分らしく生きる',
       keywords: '健康,学び,つながり,成長',
     },
@@ -83,9 +84,10 @@ async function main() {
   const themes = await Promise.all([
     prisma.monthTheme.upsert({
       where: {
-        userId_month_title: {
+        userId_month_area_title: {
           userId,
           month: currentMonth,
+          area: 'private',
           title: '朝のルーティンを整える',
         },
       },
@@ -100,9 +102,10 @@ async function main() {
     }),
     prisma.monthTheme.upsert({
       where: {
-        userId_month_title: {
+        userId_month_area_title: {
           userId,
           month: currentMonth,
+          area: 'private',
           title: 'TypeScriptの基礎を学ぶ',
         },
       },
@@ -117,9 +120,10 @@ async function main() {
     }),
     prisma.monthTheme.upsert({
       where: {
-        userId_month_title: {
+        userId_month_area_title: {
           userId,
           month: currentMonth,
+          area: 'private',
           title: '週末に家族と過ごす',
         },
       },
