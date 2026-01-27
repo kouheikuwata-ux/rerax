@@ -75,6 +75,7 @@ export async function adoptProposal(proposedItems: ProposedFocusItem[]): Promise
   for (const item of proposedItems) {
     await createFocusItem(userId, {
       date: today,
+      area: item.area,
       title: item.title,
       duration: item.duration,
       load: item.load,
