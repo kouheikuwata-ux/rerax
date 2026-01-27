@@ -5,6 +5,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  transpilePackages: ['@xyflow/react'],
 }
 
 module.exports = nextConfig
