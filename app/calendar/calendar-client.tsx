@@ -38,6 +38,7 @@ export function CalendarClient() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [newItemTitle, setNewItemTitle] = useState('')
   const [isAdding, setIsAdding] = useState(false)
+  const [selectedArea, setSelectedArea] = useState<Area>('private')
 
   // Fetch data for the current month
   useEffect(() => {
@@ -63,6 +64,7 @@ export function CalendarClient() {
 
   const handleDayClick = (day: Date) => {
     setSelectedDate(day)
+    setSelectedArea(area) // 現在のタブをデフォルトに
     setIsAddModalOpen(true)
   }
 
@@ -73,17 +75,19 @@ export function CalendarClient() {
     try {
       await addCalendarFocusItem({
         date: format(selectedDate, 'yyyy-MM-dd'),
-        area,
+        area: selectedArea,
         title: newItemTitle.trim(),
       })
       toast.success('追加しました')
       setNewItemTitle('')
       setIsAddModalOpen(false)
-      // Refresh data
-      const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
-      const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-      const data = await getCalendarData(monthStart, monthEnd, area)
-      setFocusItems(data)
+      // Refresh data - 選択したエリアが現在のタブと同じ場合のみ更新
+      if (selectedArea === area) {
+        const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
+        const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
+        const data = await getCalendarData(monthStart, monthEnd, area)
+        setFocusItems(data)
+      }
     } catch (error) {
       toast.error('エラーが発生しました')
     } finally {
@@ -256,8 +260,37 @@ export function CalendarClient() {
         </ModalHeader>
         <div className="space-y-4">
           <div>
+            <label className="block text-sm text-calm-600 mb-2">エリア</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedArea('private')}
+                className={clsx(
+                  'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+                  selectedArea === 'private'
+                    ? 'bg-accent text-white'
+                    : 'bg-calm-100 text-calm-600 hover:bg-calm-200'
+                )}
+              >
+                プライベート
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedArea('work')}
+                className={clsx(
+                  'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+                  selectedArea === 'work'
+                    ? 'bg-accent text-white'
+                    : 'bg-calm-100 text-calm-600 hover:bg-calm-200'
+                )}
+              >
+                仕事
+              </button>
+            </div>
+          </div>
+          <div>
             <label className="block text-sm text-calm-600 mb-1">
-              {AREA_LABELS[area]}のフォーカス
+              フォーカス
             </label>
             <Input
               placeholder="やることを入力..."
