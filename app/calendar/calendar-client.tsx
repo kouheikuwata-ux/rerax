@@ -49,7 +49,11 @@ export function CalendarClient() {
   const [selectedEvents, setSelectedEvents] = useState<JapaneseEvent[]>([])
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<Set<EventCategory>>(
-    () => new Set<EventCategory>(['holiday', 'seasonal', 'cultural', 'commercial', 'sports', 'other'])
+    () => new Set<EventCategory>([
+      'holiday', 'seasonal', 'cultural', 'commercial', 'sports',
+      'food', 'school', 'business', 'astronomy', 'health',
+      'travel', 'entertainment', 'anniversary', 'spiritual', 'family', 'other'
+    ])
   )
 
   // Fetch data for the current month (only for private/work tabs)
