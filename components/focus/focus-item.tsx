@@ -7,6 +7,7 @@ import { FocusItem as FocusItemType } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { completeFocusItem, skipFocusItem, removeFocusItem } from '@/app/actions/focus'
+import { MindMapModal } from '@/components/mind-map/mind-map-modal'
 
 interface FocusItemProps {
   item: FocusItemType
@@ -30,6 +31,7 @@ const loadLabels: Record<number, string> = {
 
 export function FocusItemCard({ item, onUpdate }: FocusItemProps) {
   const [loading, setLoading] = useState(false)
+  const [mindMapOpen, setMindMapOpen] = useState(false)
 
   const handleComplete = async () => {
     setLoading(true)
@@ -95,11 +97,39 @@ export function FocusItemCard({ item, onUpdate }: FocusItemProps) {
           {item.intention && (
             <p className="mt-1 text-sm text-calm-500">{item.intention}</p>
           )}
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <Badge variant="muted">{durationLabels[item.duration]}</Badge>
             <Badge variant="muted">負荷: {loadLabels[item.load]}</Badge>
             {isDone && <Badge variant="success">完了</Badge>}
             {isSkipped && <Badge variant="muted">スキップ</Badge>}
+            <button
+              onClick={() => setMindMapOpen(true)}
+              className="ml-1 p-1 text-calm-400 hover:text-accent hover:bg-calm-100 rounded transition-colors"
+              title="マインドマップ"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <circle cx="19" cy="5" r="2" />
+                <circle cx="5" cy="5" r="2" />
+                <circle cx="19" cy="19" r="2" />
+                <circle cx="5" cy="19" r="2" />
+                <path d="M12 9V5.5" />
+                <path d="M14.5 10.5 17 7" />
+                <path d="M9.5 10.5 7 7" />
+                <path d="M14.5 13.5 17 17" />
+                <path d="M9.5 13.5 7 17" />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -138,6 +168,14 @@ export function FocusItemCard({ item, onUpdate }: FocusItemProps) {
           </Button>
         )}
       </div>
+
+      <MindMapModal
+        open={mindMapOpen}
+        onClose={() => setMindMapOpen(false)}
+        entityType="focus"
+        entityId={item.id}
+        title={item.title}
+      />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { CreateFocusItem, UpdateFocusItem, FocusItem, FocusStatus, Area } from '@/lib/types'
 import { getTodayStr } from '@/lib/date-utils'
+import { deleteMindMapNodesByEntity } from './mind-map'
 
 export async function getFocusItemsForDate(
   userId: string,
@@ -127,6 +128,9 @@ export async function deleteFocusItem(
   userId: string,
   itemId: string
 ): Promise<void> {
+  // Delete associated mind map nodes first
+  await deleteMindMapNodesByEntity('focus', itemId)
+
   await prisma.focusItem.delete({
     where: { id: itemId, userId },
   })

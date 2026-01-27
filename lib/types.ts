@@ -45,6 +45,9 @@ export const AREA_LABELS: Record<Area, string> = {
   private: 'プライベート',
 }
 
+export const EntityTypeSchema = z.enum(['focus', 'theme', 'goal', 'vision'])
+export type EntityType = z.infer<typeof EntityTypeSchema>
+
 // ============================================
 // Yearly Vision (年間ビジョン)
 // ============================================
@@ -216,6 +219,44 @@ export const CreateReflectionLogSchema = z.object({
   note: z.string().max(500).optional(),
 })
 export type CreateReflectionLog = z.infer<typeof CreateReflectionLogSchema>
+
+// ============================================
+// Mind Map Node
+// ============================================
+
+export const MindMapNodeSchema = z.object({
+  id: z.string(),
+  entityType: EntityTypeSchema,
+  entityId: z.string(),
+  parentId: z.string().nullable(),
+  label: z.string().min(1).max(200),
+  positionX: z.number(),
+  positionY: z.number(),
+  color: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+})
+export type MindMapNode = z.infer<typeof MindMapNodeSchema>
+
+export const CreateMindMapNodeSchema = z.object({
+  entityType: EntityTypeSchema,
+  entityId: z.string(),
+  parentId: z.string().nullable().optional(),
+  label: z.string().min(1).max(200),
+  positionX: z.number(),
+  positionY: z.number(),
+  color: z.string().optional(),
+})
+export type CreateMindMapNode = z.infer<typeof CreateMindMapNodeSchema>
+
+export const UpdateMindMapNodeSchema = z.object({
+  parentId: z.string().nullable().optional(),
+  label: z.string().min(1).max(200).optional(),
+  positionX: z.number().optional(),
+  positionY: z.number().optional(),
+  color: z.string().optional(),
+})
+export type UpdateMindMapNode = z.infer<typeof UpdateMindMapNodeSchema>
 
 // ============================================
 // AI Planner Types

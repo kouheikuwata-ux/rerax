@@ -6,6 +6,7 @@ import { YearlyVision, Area } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { setYearlyVision } from '@/app/actions/yearly'
+import { MindMapModal } from '@/components/mind-map/mind-map-modal'
 
 interface YearlyVisionCardProps {
   vision: YearlyVision | null
@@ -18,6 +19,7 @@ export function YearlyVisionCard({ vision, year, area }: YearlyVisionCardProps) 
   const [title, setTitle] = useState(vision?.title || '')
   const [keywords, setKeywords] = useState(vision?.keywords || '')
   const [loading, setLoading] = useState(false)
+  const [mindMapOpen, setMindMapOpen] = useState(false)
 
   const handleSave = async () => {
     if (!title.trim()) return
@@ -93,14 +95,51 @@ export function YearlyVisionCard({ vision, year, area }: YearlyVisionCardProps) 
           ))}
         </p>
       )}
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => setIsEditing(true)}
-        className="mt-2 opacity-0 group-hover:opacity-100 text-calm-400"
-      >
-        編集
-      </Button>
+      <div className="mt-2 flex items-center gap-1">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setIsEditing(true)}
+          className="opacity-0 group-hover:opacity-100 text-calm-400"
+        >
+          編集
+        </Button>
+        <button
+          onClick={() => setMindMapOpen(true)}
+          className="p-1 text-calm-400 hover:text-accent hover:bg-calm-100 rounded transition-colors opacity-0 group-hover:opacity-100"
+          title="マインドマップ"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <circle cx="19" cy="5" r="2" />
+            <circle cx="5" cy="5" r="2" />
+            <circle cx="19" cy="19" r="2" />
+            <circle cx="5" cy="19" r="2" />
+            <path d="M12 9V5.5" />
+            <path d="M14.5 10.5 17 7" />
+            <path d="M9.5 10.5 7 7" />
+            <path d="M14.5 13.5 17 17" />
+            <path d="M9.5 13.5 7 17" />
+          </svg>
+        </button>
+      </div>
+      <MindMapModal
+        open={mindMapOpen}
+        onClose={() => setMindMapOpen(false)}
+        entityType="vision"
+        entityId={vision.id}
+        title={vision.title}
+      />
     </div>
   )
 }

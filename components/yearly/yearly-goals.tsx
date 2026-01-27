@@ -6,6 +6,7 @@ import { YearlyGoal, Area } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { addYearlyGoal, editYearlyGoal, removeYearlyGoal } from '@/app/actions/yearly'
+import { MindMapModal } from '@/components/mind-map/mind-map-modal'
 
 interface YearlyGoalsListProps {
   goals: YearlyGoal[]
@@ -21,6 +22,7 @@ export function YearlyGoalsList({ goals, year, area, visionId, maxItems = 5 }: Y
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
+  const [mindMapGoalId, setMindMapGoalId] = useState<string | null>(null)
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -109,7 +111,35 @@ export function YearlyGoalsList({ goals, year, area, visionId, maxItems = 5 }: Y
           ) : (
             <>
               <span className="flex-1 text-calm-700">{goal.title}</span>
-              <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+              <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                <button
+                  onClick={() => setMindMapGoalId(goal.id)}
+                  className="p-1 text-calm-400 hover:text-accent hover:bg-calm-100 rounded transition-colors"
+                  title="マインドマップ"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="3" />
+                    <circle cx="19" cy="5" r="2" />
+                    <circle cx="5" cy="5" r="2" />
+                    <circle cx="19" cy="19" r="2" />
+                    <circle cx="5" cy="19" r="2" />
+                    <path d="M12 9V5.5" />
+                    <path d="M14.5 10.5 17 7" />
+                    <path d="M9.5 10.5 7 7" />
+                    <path d="M14.5 13.5 17 17" />
+                    <path d="M9.5 13.5 7 17" />
+                  </svg>
+                </button>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -167,6 +197,16 @@ export function YearlyGoalsList({ goals, year, area, visionId, maxItems = 5 }: Y
             + 目標を追加
           </Button>
         )
+      )}
+
+      {mindMapGoalId && (
+        <MindMapModal
+          open={!!mindMapGoalId}
+          onClose={() => setMindMapGoalId(null)}
+          entityType="goal"
+          entityId={mindMapGoalId}
+          title={goals.find((g) => g.id === mindMapGoalId)?.title || '目標'}
+        />
       )}
     </div>
   )

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { CreateMonthTheme, MonthTheme, Area } from '@/lib/types'
 import { getCurrentMonthStr } from '@/lib/date-utils'
+import { deleteMindMapNodesByEntity } from './mind-map'
 
 export async function getMonthThemes(
   userId: string,
@@ -72,6 +73,9 @@ export async function deleteMonthTheme(
   userId: string,
   themeId: string
 ): Promise<void> {
+  // Delete associated mind map nodes first
+  await deleteMindMapNodesByEntity('theme', themeId)
+
   await prisma.monthTheme.delete({
     where: { id: themeId, userId },
   })

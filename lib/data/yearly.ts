@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { CreateYearlyVision, CreateYearlyGoal, YearlyVision, YearlyGoal, Area } from '@/lib/types'
+import { deleteMindMapNodesByEntity } from './mind-map'
 
 // ============================================
 // Yearly Vision
@@ -154,6 +155,9 @@ export async function deleteYearlyGoal(
   userId: string,
   goalId: string
 ): Promise<void> {
+  // Delete associated mind map nodes first
+  await deleteMindMapNodesByEntity('goal', goalId)
+
   await prisma.yearlyGoal.delete({
     where: { id: goalId, userId },
   })
