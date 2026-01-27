@@ -109,9 +109,12 @@ model MindMapNode {
   entityType  String   @map("entity_type")  // "focus", "theme", "goal", "vision"
   entityId    String   @map("entity_id")
   parentId    String?  @map("parent_id")
+  nodeType    String   @default("mindMapNode") @map("node_type")  // "mindMapNode", "stickyNote", "section"
   label       String
   positionX   Float    @map("position_x")
   positionY   Float    @map("position_y")
+  width       Float?   @map("width")
+  height      Float?   @map("height")
   color       String   @default("#94a3b8")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

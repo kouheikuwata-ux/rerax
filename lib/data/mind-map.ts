@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { MindMapNode, CreateMindMapNode, UpdateMindMapNode, EntityType } from '@/lib/types'
+import { MindMapNode, CreateMindMapNode, UpdateMindMapNode, EntityType, MindMapNodeType } from '@/lib/types'
 
 export async function getMindMapNodes(entityType: EntityType, entityId: string): Promise<MindMapNode[]> {
   const nodes = await prisma.mindMapNode.findMany({
@@ -7,7 +7,10 @@ export async function getMindMapNodes(entityType: EntityType, entityId: string):
     orderBy: { createdAt: 'asc' },
   })
 
-  return nodes as MindMapNode[]
+  return nodes.map(node => ({
+    ...node,
+    nodeType: (node.nodeType || 'mindMapNode') as MindMapNodeType,
+  })) as MindMapNode[]
 }
 
 export async function createMindMapNode(data: CreateMindMapNode): Promise<MindMapNode> {
@@ -56,9 +59,12 @@ export async function saveMindMapNodes(
   nodes: Array<{
     id?: string
     parentId?: string | null
+    nodeType?: string
     label: string
     positionX: number
     positionY: number
+    width?: number | null
+    height?: number | null
     color: string
   }>
 ): Promise<MindMapNode[]> {
@@ -89,13 +95,19 @@ export async function saveMindMapNodes(
         where: { id: node.id },
         data: {
           parentId: node.parentId ?? null,
+          nodeType: node.nodeType ?? 'mindMapNode',
           label: node.label,
           positionX: node.positionX,
           positionY: node.positionY,
+          width: node.width ?? null,
+          height: node.height ?? null,
           color: node.color,
         },
       })
-      results.push(updated as MindMapNode)
+      results.push({
+        ...updated,
+        nodeType: (updated.nodeType || 'mindMapNode') as MindMapNodeType,
+      } as MindMapNode)
     } else {
       // Create new
       const created = await prisma.mindMapNode.create({
@@ -103,13 +115,19 @@ export async function saveMindMapNodes(
           entityType,
           entityId,
           parentId: node.parentId ?? null,
+          nodeType: node.nodeType ?? 'mindMapNode',
           label: node.label,
           positionX: node.positionX,
           positionY: node.positionY,
+          width: node.width ?? null,
+          height: node.height ?? null,
           color: node.color,
         },
       })
-      results.push(created as MindMapNode)
+      results.push({
+        ...created,
+        nodeType: (created.nodeType || 'mindMapNode') as MindMapNodeType,
+      } as MindMapNode)
     }
   }
 

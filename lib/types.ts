@@ -224,14 +224,20 @@ export type CreateReflectionLog = z.infer<typeof CreateReflectionLogSchema>
 // Mind Map Node
 // ============================================
 
+export const MindMapNodeTypeSchema = z.enum(['mindMapNode', 'stickyNote', 'section'])
+export type MindMapNodeType = z.infer<typeof MindMapNodeTypeSchema>
+
 export const MindMapNodeSchema = z.object({
   id: z.string(),
   entityType: EntityTypeSchema,
   entityId: z.string(),
   parentId: z.string().nullable(),
-  label: z.string().min(1).max(200),
+  nodeType: MindMapNodeTypeSchema.default('mindMapNode'),
+  label: z.string().max(2000),
   positionX: z.number(),
   positionY: z.number(),
+  width: z.number().nullable(),
+  height: z.number().nullable(),
   color: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
@@ -242,18 +248,24 @@ export const CreateMindMapNodeSchema = z.object({
   entityType: EntityTypeSchema,
   entityId: z.string(),
   parentId: z.string().nullable().optional(),
-  label: z.string().min(1).max(200),
+  nodeType: MindMapNodeTypeSchema.optional(),
+  label: z.string().max(2000),
   positionX: z.number(),
   positionY: z.number(),
+  width: z.number().optional(),
+  height: z.number().optional(),
   color: z.string().optional(),
 })
 export type CreateMindMapNode = z.infer<typeof CreateMindMapNodeSchema>
 
 export const UpdateMindMapNodeSchema = z.object({
   parentId: z.string().nullable().optional(),
-  label: z.string().min(1).max(200).optional(),
+  nodeType: MindMapNodeTypeSchema.optional(),
+  label: z.string().max(2000).optional(),
   positionX: z.number().optional(),
   positionY: z.number().optional(),
+  width: z.number().nullable().optional(),
+  height: z.number().nullable().optional(),
   color: z.string().optional(),
 })
 export type UpdateMindMapNode = z.infer<typeof UpdateMindMapNodeSchema>

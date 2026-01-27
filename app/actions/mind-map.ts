@@ -45,9 +45,12 @@ export async function saveMindMap(
   nodes: Array<{
     id?: string
     parentId?: string | null
+    nodeType?: string
     label: string
     positionX: number
     positionY: number
+    width?: number | null
+    height?: number | null
     color: string
   }>
 ): Promise<MindMapNode[]> {

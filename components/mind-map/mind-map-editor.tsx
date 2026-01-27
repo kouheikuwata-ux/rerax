@@ -16,12 +16,17 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react'
 import { CustomNode, MindMapNodeData, MindMapContext } from './custom-node'
+import { StickyNoteNode, StickyNoteData } from './sticky-note-node'
+import { SectionNode, SectionNodeData } from './section-node'
 import { MindMapNode } from '@/lib/types'
 
-type FlowNode = Node<MindMapNodeData>
+type FlowNodeData = MindMapNodeData | StickyNoteData | SectionNodeData
+type FlowNode = Node<FlowNodeData>
 
 const nodeTypes = {
   mindMapNode: CustomNode,
+  stickyNote: StickyNoteNode,
+  section: SectionNode,
 }
 
 interface MindMapEditorProps {
@@ -29,9 +34,12 @@ interface MindMapEditorProps {
   onSave: (nodes: Array<{
     id?: string
     parentId?: string | null
+    nodeType?: string
     label: string
     positionX: number
     positionY: number
+    width?: number | null
+    height?: number | null
     color: string
   }>) => Promise<MindMapNode[]>
   saving: boolean
@@ -55,11 +63,14 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
 
     const flowNodes: FlowNode[] = initialNodes.map((node) => ({
       id: node.id,
-      type: 'mindMapNode',
+      type: node.nodeType || 'mindMapNode',
       position: { x: node.positionX, y: node.positionY },
+      ...(node.width && node.height ? { width: node.width, height: node.height } : {}),
       data: {
         label: node.label,
         color: node.color,
+        width: node.width,
+        height: node.height,
       },
     }))
 
@@ -103,11 +114,14 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
   const handleNodesChange = useCallback(
     (changes: NodeChange<FlowNode>[]) => {
       onNodesChange(changes)
-      // Only mark as changed for position changes (dragging)
+      // Mark as changed for position changes (dragging) or dimension changes (resizing)
       const hasDragChange = changes.some(
         (change) => change.type === 'position' && change.dragging === false
       )
-      if (hasDragChange) {
+      const hasDimensionChange = changes.some(
+        (change) => change.type === 'dimensions'
+      )
+      if (hasDragChange || hasDimensionChange) {
         markChanged()
       }
     },
@@ -232,6 +246,42 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
     markChanged()
   }, [setNodes, markChanged])
 
+  const handleAddStickyNote = useCallback(() => {
+    const newId = generateId()
+    const newNode: FlowNode = {
+      id: newId,
+      type: 'stickyNote',
+      position: { x: 100, y: 100 },
+      data: {
+        label: '',
+        color: '#FFF9C4',
+        width: 120,
+        height: 120,
+      },
+    }
+
+    setNodes((nds) => [...nds, newNode])
+    markChanged()
+  }, [setNodes, markChanged])
+
+  const handleAddSection = useCallback(() => {
+    const newId = generateId()
+    const newNode: FlowNode = {
+      id: newId,
+      type: 'section',
+      position: { x: 50, y: 50 },
+      data: {
+        label: 'セクション',
+        color: '#F5F5F5',
+        width: 300,
+        height: 200,
+      },
+    }
+
+    setNodes((nds) => [...nds, newNode])
+    markChanged()
+  }, [setNodes, markChanged])
+
   const handleSave = useCallback(async () => {
     // Build parentId map from edges
     const parentMap = new Map<string, string>()
@@ -242,9 +292,12 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
     const nodesToSave = nodes.map((node) => ({
       id: node.id.startsWith('temp_') ? undefined : node.id,
       parentId: parentMap.get(node.id) ?? null,
-      label: node.data.label,
+      nodeType: node.type,
+      label: node.data.label || '',
       positionX: node.position.x,
       positionY: node.position.y,
+      width: node.measured?.width ?? node.width ?? (node.data as StickyNoteData | SectionNodeData).width ?? null,
+      height: node.measured?.height ?? node.height ?? (node.data as StickyNoteData | SectionNodeData).height ?? null,
       color: node.data.color,
     }))
 
@@ -317,10 +370,40 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
       <div className="absolute bottom-4 left-4 flex gap-2">
         <button
           onClick={handleAddRootNode}
-          className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors shadow-md flex items-center gap-2"
+          className="px-3 py-2 bg-calm-600 text-white rounded-lg hover:bg-calm-700 transition-colors shadow-md flex items-center gap-2 text-sm"
+          title="マインドマップノードを追加"
         >
-          <span className="text-lg">+</span>
-          ノード追加
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <circle cx="19" cy="5" r="2" />
+            <circle cx="5" cy="5" r="2" />
+            <path d="M12 9V5.5" />
+            <path d="M14.5 10.5 17 7" />
+            <path d="M9.5 10.5 7 7" />
+          </svg>
+          ノード
+        </button>
+        <button
+          onClick={handleAddStickyNote}
+          className="px-3 py-2 bg-yellow-400 text-yellow-900 rounded-lg hover:bg-yellow-500 transition-colors shadow-md flex items-center gap-2 text-sm"
+          title="付箋を追加"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z" />
+            <path d="M15 3v4a2 2 0 0 0 2 2h4" />
+          </svg>
+          付箋
+        </button>
+        <button
+          onClick={handleAddSection}
+          className="px-3 py-2 bg-white text-calm-700 border border-calm-300 rounded-lg hover:bg-calm-50 transition-colors shadow-md flex items-center gap-2 text-sm"
+          title="セクションを追加"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" />
+            <path d="M3 9h18" />
+          </svg>
+          セクション
         </button>
       </div>
 
