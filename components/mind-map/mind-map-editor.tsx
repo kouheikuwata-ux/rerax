@@ -69,6 +69,7 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
       type: node.nodeType || 'mindMapNode',
       position: { x: node.positionX, y: node.positionY },
       ...(node.width && node.height ? { width: node.width, height: node.height } : {}),
+      ...(node.nodeType === 'section' ? { zIndex: -1000 } : {}),
       data: {
         label: node.label,
         color: node.color,
@@ -274,6 +275,7 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
       id: newId,
       type: 'section',
       position: { x: 50, y: 50 },
+      zIndex: -1000,
       data: {
         label: 'セクション',
         color: '#F5F5F5',
