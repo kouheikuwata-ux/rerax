@@ -133,16 +133,42 @@ function CustomNodeComponent({ id, data, selected }: CustomNodeProps) {
       />
 
       {selected && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            context?.onAddChild(id)
-          }}
-          className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-accent/80 transition-colors shadow-md"
-          title="子ノードを追加"
-        >
-          +
-        </button>
+        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              context?.onAddChild(id)
+            }}
+            className="bg-accent text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-accent/80 transition-colors shadow-md"
+            title="子ノードを追加"
+          >
+            +
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              context?.onDelete(id)
+            }}
+            className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow-md"
+            title="削除"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          </button>
+        </div>
       )}
 
       {showContextMenu && (
