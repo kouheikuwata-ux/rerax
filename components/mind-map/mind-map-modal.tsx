@@ -110,11 +110,11 @@ export function MindMapModal({
   return createPortal(
     <div className="fixed inset-0 z-50 bg-white flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-calm-200 bg-white">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-calm-200 bg-white relative z-10">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
-            className="p-2 hover:bg-calm-100 rounded-lg transition-colors text-calm-600"
+            className="flex items-center gap-2 px-3 py-2 bg-calm-100 hover:bg-calm-200 rounded-lg transition-colors text-calm-700 font-medium"
             title="閉じる"
           >
             <svg
@@ -131,6 +131,7 @@ export function MindMapModal({
               <path d="M19 12H5" />
               <path d="M12 19l-7-7 7-7" />
             </svg>
+            戻る
           </button>
           <h2 className="text-lg font-semibold text-calm-800">{title}</h2>
         </div>
