@@ -57,6 +57,6 @@ export async function saveMindMap(
 ): Promise<MindMapNode[]> {
   await requireAuth()
   const result = await saveMindMapNodes(entityType, entityId, nodes)
-  revalidatePath('/')
+  // Note: Not calling revalidatePath('/') to prevent modal from closing
   return result
 }
