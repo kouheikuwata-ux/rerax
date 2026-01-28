@@ -125,46 +125,15 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
   const handleNodesChange = useCallback(
     (changes: NodeChange<FlowNode>[]) => {
       onNodesChange(changes)
-      // Mark as changed for position changes (dragging) or dimension changes (resizing)
+      // Mark as changed for position changes (dragging)
       const hasDragChange = changes.some(
         (change) => change.type === 'position' && change.dragging === false
       )
-      const dimensionChanges = changes.filter(
-        (change): change is NodeChange<FlowNode> & { type: 'dimensions'; id: string; dimensions?: { width: number; height: number } } =>
-          change.type === 'dimensions' && 'dimensions' in change && change.dimensions !== undefined
-      )
-
-      // Update node data with new dimensions (but don't mark as changed on first render)
-      if (dimensionChanges.length > 0) {
-        setNodes((nds) =>
-          nds.map((node) => {
-            const dimChange = dimensionChanges.find((c) => c.id === node.id)
-            if (dimChange && dimChange.dimensions) {
-              return {
-                ...node,
-                width: dimChange.dimensions.width,
-                height: dimChange.dimensions.height,
-                data: {
-                  ...node.data,
-                  width: dimChange.dimensions.width,
-                  height: dimChange.dimensions.height,
-                },
-              }
-            }
-            return node
-          })
-        )
-        // Only mark as changed after first render is complete
-        if (!isFirstRenderRef.current) {
-          markChanged()
-        }
-      }
-
-      if (hasDragChange) {
+      if (hasDragChange && !isFirstRenderRef.current) {
         markChanged()
       }
     },
-    [onNodesChange, markChanged, setNodes]
+    [onNodesChange, markChanged]
   )
 
   const onConnect = useCallback(
