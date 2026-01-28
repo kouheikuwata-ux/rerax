@@ -102,24 +102,21 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
     setEdges(flowEdges)
   }, [initialNodes, setNodes, setEdges])
 
-  // Auto-save with debounce (skip during first render)
-  useEffect(() => {
-    if (!hasChanges || isFirstRenderRef.current) return
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current)
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      handleSave()
-    }, 1500)
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current)
-      }
-    }
-  }, [hasChanges, nodes, edges])
+  // Auto-save disabled - save only when closing modal
+  // useEffect(() => {
+  //   if (!hasChanges || isFirstRenderRef.current) return
+  //   if (saveTimeoutRef.current) {
+  //     clearTimeout(saveTimeoutRef.current)
+  //   }
+  //   saveTimeoutRef.current = setTimeout(() => {
+  //     handleSave()
+  //   }, 1500)
+  //   return () => {
+  //     if (saveTimeoutRef.current) {
+  //       clearTimeout(saveTimeoutRef.current)
+  //     }
+  //   }
+  // }, [hasChanges, nodes, edges])
 
   const markChanged = useCallback(() => {
     setHasChanges(true)
