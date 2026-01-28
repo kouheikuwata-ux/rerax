@@ -123,14 +123,39 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
       const hasDragChange = changes.some(
         (change) => change.type === 'position' && change.dragging === false
       )
-      const hasDimensionChange = changes.some(
-        (change) => change.type === 'dimensions'
+      const dimensionChanges = changes.filter(
+        (change): change is NodeChange<FlowNode> & { type: 'dimensions'; id: string; dimensions?: { width: number; height: number } } =>
+          change.type === 'dimensions' && 'dimensions' in change && change.dimensions !== undefined
       )
-      if (hasDragChange || hasDimensionChange) {
+
+      // Update node data with new dimensions
+      if (dimensionChanges.length > 0) {
+        setNodes((nds) =>
+          nds.map((node) => {
+            const dimChange = dimensionChanges.find((c) => c.id === node.id)
+            if (dimChange && dimChange.dimensions) {
+              return {
+                ...node,
+                width: dimChange.dimensions.width,
+                height: dimChange.dimensions.height,
+                data: {
+                  ...node.data,
+                  width: dimChange.dimensions.width,
+                  height: dimChange.dimensions.height,
+                },
+              }
+            }
+            return node
+          })
+        )
+        markChanged()
+      }
+
+      if (hasDragChange) {
         markChanged()
       }
     },
-    [onNodesChange, markChanged]
+    [onNodesChange, markChanged, setNodes]
   )
 
   const onConnect = useCallback(
