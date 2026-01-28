@@ -33,12 +33,39 @@ import {
   JapaneseEvent,
   EventCategory,
 } from '@/lib/japanese-events'
+import { GoogleConnectButton } from '@/components/google-connect-button'
+import { GoogleCalendarSync } from '@/components/google-calendar-sync'
 
 const DAY_NAMES = ['月', '火', '水', '木', '金', '土', '日']
 
+// EventPill - 改善されたイベント表示コンポーネント
+function EventPill({
+  title,
+  colorClass,
+  isCompleted = false,
+}: {
+  title: string
+  colorClass: string
+  isCompleted?: boolean
+}) {
+  return (
+    <div
+      className={clsx(
+        'h-5 sm:h-6 px-2 text-xs sm:text-sm rounded-md truncate flex items-center',
+        'min-w-0',
+        colorClass,
+        isCompleted && 'line-through opacity-70'
+      )}
+      title={title}
+    >
+      {title}
+    </div>
+  )
+}
+
 export function CalendarClient() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [tab, setTab] = useState<CalendarTab>('private')
+  const [tab, setTab] = useState<CalendarTab>('all')
   const [focusItems, setFocusItems] = useState<FocusItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -48,6 +75,12 @@ export function CalendarClient() {
   const [selectedArea, setSelectedArea] = useState<Area>('private')
   const [selectedEvents, setSelectedEvents] = useState<JapaneseEvent[]>([])
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  // DayAgendaModal用の状態
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false)
+  const [selectedDayItems, setSelectedDayItems] = useState<FocusItem[]>([])
+  const [selectedDayEvents, setSelectedDayEvents] = useState<JapaneseEvent[]>([])
+  // レスポンシブ表示件数
+  const [maxVisibleItems, setMaxVisibleItems] = useState(3)
   const [selectedCategories, setSelectedCategories] = useState<Set<EventCategory>>(
     () => new Set<EventCategory>([
       'holiday', 'seasonal', 'cultural', 'commercial', 'sports',
@@ -56,7 +89,17 @@ export function CalendarClient() {
     ])
   )
 
-  // Fetch data for the current month (only for private/work tabs)
+  // レスポンシブ表示件数の監視
+  useEffect(() => {
+    const handleResize = () => {
+      setMaxVisibleItems(window.innerWidth < 640 ? 2 : 3)
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Fetch data for the current month
   useEffect(() => {
     async function fetchData() {
       if (tab === 'events') {
@@ -68,8 +111,18 @@ export function CalendarClient() {
       try {
         const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
         const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-        const data = await getCalendarData(monthStart, monthEnd, tab as Area)
-        setFocusItems(data)
+
+        if (tab === 'all') {
+          // Fetch both private and work items
+          const [privateData, workData] = await Promise.all([
+            getCalendarData(monthStart, monthEnd, 'private'),
+            getCalendarData(monthStart, monthEnd, 'work'),
+          ])
+          setFocusItems([...privateData, ...workData])
+        } else {
+          const data = await getCalendarData(monthStart, monthEnd, tab as Area)
+          setFocusItems(data)
+        }
       } catch (error) {
         toast.error('データの取得に失敗しました')
       } finally {
@@ -84,18 +137,32 @@ export function CalendarClient() {
   const handleToday = () => setCurrentMonth(new Date())
 
   const handleDayClick = (day: Date) => {
+    const dateStr = format(day, 'yyyy-MM-dd')
+    setSelectedDate(day)
+
     if (tab === 'events') {
-      const events = getEventsForDate(day.getFullYear(), day.getMonth() + 1, day.getDate())
+      // イベントタブの場合はイベントのみ表示
+      const events = (eventsByDate[dateStr] || []).filter(e => selectedCategories.has(e.category))
       if (events.length > 0) {
-        setSelectedDate(day)
         setSelectedEvents(events)
         setIsEventModalOpen(true)
       }
     } else {
-      setSelectedDate(day)
-      setSelectedArea(tab as Area)
-      setIsAddModalOpen(true)
+      // その他のタブではDayAgendaModalを表示
+      const items = itemsByDate[dateStr] || []
+      const events = (eventsByDate[dateStr] || []).filter(e => selectedCategories.has(e.category))
+
+      setSelectedDayItems(items)
+      setSelectedDayEvents(tab === 'all' ? events : [])
+      setSelectedArea(tab === 'all' ? 'private' : (tab as Area))
+      setIsDayModalOpen(true)
     }
+  }
+
+  // DayAgendaModalから追加モーダルを開く
+  const openAddModalFromDay = () => {
+    setIsDayModalOpen(false)
+    setIsAddModalOpen(true)
   }
 
   const handleAddItem = async () => {
@@ -112,11 +179,19 @@ export function CalendarClient() {
       setNewItemTitle('')
       setIsAddModalOpen(false)
       // Refresh data
-      if (selectedArea === tab) {
+      if (tab === 'all' || selectedArea === tab) {
         const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
         const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-        const data = await getCalendarData(monthStart, monthEnd, tab as Area)
-        setFocusItems(data)
+        if (tab === 'all') {
+          const [privateData, workData] = await Promise.all([
+            getCalendarData(monthStart, monthEnd, 'private'),
+            getCalendarData(monthStart, monthEnd, 'work'),
+          ])
+          setFocusItems([...privateData, ...workData])
+        } else {
+          const data = await getCalendarData(monthStart, monthEnd, tab as Area)
+          setFocusItems(data)
+        }
       }
     } catch (error) {
       toast.error('エラーが発生しました')
@@ -167,24 +242,53 @@ export function CalendarClient() {
   }, {} as Record<string, JapaneseEvent[]>)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-calm-800">カレンダー</h1>
-          <p className="text-calm-500">スケジュールを確認・追加</p>
+      <header className="space-y-3 px-2 sm:px-0">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-calm-800">カレンダー</h1>
+            <p className="text-calm-500">スケジュールを確認・追加</p>
+          </div>
+          <Link href="/">
+            <Button variant="ghost" size="sm">← ホームに戻る</Button>
+          </Link>
         </div>
-        <Link href="/">
-          <Button variant="ghost" size="sm">← ホームに戻る</Button>
-        </Link>
+        <div className="flex items-center justify-between">
+          <GoogleConnectButton />
+          <GoogleCalendarSync
+            startDate={format(startOfMonth(currentMonth), 'yyyy-MM-dd')}
+            endDate={format(endOfMonth(currentMonth), 'yyyy-MM-dd')}
+            onSyncComplete={() => {
+              // Refresh calendar data after sync
+              const fetchData = async () => {
+                const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
+                const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
+                if (tab === 'all') {
+                  const [privateData, workData] = await Promise.all([
+                    getCalendarData(monthStart, monthEnd, 'private'),
+                    getCalendarData(monthStart, monthEnd, 'work'),
+                  ])
+                  setFocusItems([...privateData, ...workData])
+                } else if (tab !== 'events') {
+                  const data = await getCalendarData(monthStart, monthEnd, tab as Area)
+                  setFocusItems(data)
+                }
+              }
+              fetchData()
+            }}
+          />
+        </div>
       </header>
 
       {/* Calendar Tabs */}
-      <CalendarTabs value={tab} onChange={setTab} />
+      <div className="px-2 sm:px-0">
+        <CalendarTabs value={tab} onChange={setTab} />
+      </div>
 
-      {/* Category Filter (Events tab only) */}
-      {tab === 'events' && (
-        <div className="flex flex-wrap gap-2">
+      {/* Category Filter (Events and All tabs) */}
+      {(tab === 'events' || tab === 'all') && (
+        <div className="flex flex-wrap gap-2 px-2 sm:px-0">
           {(Object.entries(EVENT_CATEGORY_COLORS) as [EventCategory, typeof EVENT_CATEGORY_COLORS[EventCategory]][]).map(
             ([category, colors]) => (
               <button
@@ -205,7 +309,7 @@ export function CalendarClient() {
       )}
 
       {/* Month Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-2 sm:px-0">
         <Button variant="ghost" size="sm" onClick={handlePrevMonth}>
           ← 前月
         </Button>
@@ -223,9 +327,9 @@ export function CalendarClient() {
       </div>
 
       {/* Calendar Grid */}
-      <Card className="p-4">
+      <Card className="p-0 sm:p-4 shadow-none sm:shadow-sm border-0 sm:border">
         {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
           {DAY_NAMES.map((name, i) => (
             <div
               key={name}
@@ -243,14 +347,14 @@ export function CalendarClient() {
 
         {/* Calendar Days */}
         {isLoading ? (
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="h-24 bg-calm-50 rounded animate-pulse" />
+              <div key={i} className="h-[100px] sm:h-[120px] bg-calm-50 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : tab === 'events' ? (
           // Events Calendar View
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {calendarDays.map((dayDate) => {
               const dateStr = format(dayDate, 'yyyy-MM-dd')
               const dayEvents = (eventsByDate[dateStr] || []).filter((e) =>
@@ -259,6 +363,7 @@ export function CalendarClient() {
               const isCurrentMonth = isSameMonth(dayDate, currentMonth)
               const isTodayDate = isToday(dayDate)
               const dayOfWeek = (dayDate.getDay() + 6) % 7
+              const overflowCount = dayEvents.length - maxVisibleItems
 
               return (
                 <button
@@ -267,14 +372,16 @@ export function CalendarClient() {
                   onClick={() => handleDayClick(dayDate)}
                   disabled={dayEvents.length === 0}
                   className={clsx(
-                    'min-h-24 p-2 rounded-lg text-left transition-all',
+                    'min-h-[100px] sm:min-h-[120px] p-1 sm:p-2 rounded-lg text-left transition-all flex flex-col',
                     'hover:bg-calm-100 focus:outline-none focus:ring-2 focus:ring-accent/30',
                     isCurrentMonth ? 'bg-white' : 'bg-calm-50/50',
-                    isTodayDate && 'ring-2 ring-accent',
+                    isTodayDate && 'bg-accent/10 ring-2 ring-accent',
+                    !isCurrentMonth && 'opacity-40',
                     dayEvents.length === 0 && 'cursor-default hover:bg-white'
                   )}
                 >
-                  <div className="flex items-center justify-between mb-1">
+                  {/* 日付数字 */}
+                  <div className="flex-shrink-0 mb-1">
                     <span
                       className={clsx(
                         'text-sm font-medium',
@@ -288,26 +395,104 @@ export function CalendarClient() {
                       {format(dayDate, 'd')}
                     </span>
                   </div>
-                  <div className="space-y-1">
-                    {dayEvents.slice(0, 3).map((event, idx) => {
+                  {/* イベントエリア */}
+                  <div className="flex-1 flex flex-col gap-0.5 sm:gap-1 overflow-hidden">
+                    {dayEvents.slice(0, maxVisibleItems).map((event, idx) => {
                       const colors = EVENT_CATEGORY_COLORS[event.category]
                       return (
-                        <div
+                        <EventPill
                           key={idx}
-                          className={clsx(
-                            'text-xs px-1.5 py-0.5 rounded truncate',
-                            colors.bg,
-                            colors.text
-                          )}
                           title={event.name}
-                        >
-                          {event.name}
-                        </div>
+                          colorClass={`${colors.bg} ${colors.text}`}
+                        />
                       )
                     })}
-                    {dayEvents.length > 3 && (
-                      <div className="text-xs text-calm-400">
-                        +{dayEvents.length - 3}件
+                    {overflowCount > 0 && (
+                      <div className="h-5 text-xs text-calm-500 hover:text-calm-700 flex items-center">
+                        +{overflowCount}件
+                      </div>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        ) : tab === 'all' ? (
+          // All View - Focus Items + Events
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+            {calendarDays.map((dayDate) => {
+              const dateStr = format(dayDate, 'yyyy-MM-dd')
+              const dayItems = itemsByDate[dateStr] || []
+              const dayEvents = (eventsByDate[dateStr] || []).filter((e) =>
+                selectedCategories.has(e.category)
+              )
+              const isCurrentMonth = isSameMonth(dayDate, currentMonth)
+              const isTodayDate = isToday(dayDate)
+              const dayOfWeek = (dayDate.getDay() + 6) % 7
+              const totalItems = dayItems.length + dayEvents.length
+              // Focus itemsを優先して表示、残りはevents
+              const visibleItemCount = Math.min(dayItems.length, maxVisibleItems)
+              const visibleEventCount = Math.max(0, maxVisibleItems - visibleItemCount)
+              const overflowCount = totalItems - maxVisibleItems
+
+              return (
+                <button
+                  key={dateStr}
+                  type="button"
+                  onClick={() => handleDayClick(dayDate)}
+                  className={clsx(
+                    'min-h-[100px] sm:min-h-[120px] p-1 sm:p-2 rounded-lg text-left transition-all flex flex-col',
+                    'hover:bg-calm-100 focus:outline-none focus:ring-2 focus:ring-accent/30',
+                    isCurrentMonth ? 'bg-white' : 'bg-calm-50/50',
+                    isTodayDate && 'bg-accent/10 ring-2 ring-accent',
+                    !isCurrentMonth && 'opacity-40'
+                  )}
+                >
+                  {/* 日付数字 */}
+                  <div className="flex-shrink-0 mb-1">
+                    <span
+                      className={clsx(
+                        'text-sm font-medium',
+                        !isCurrentMonth && 'text-calm-300',
+                        isCurrentMonth && dayOfWeek === 5 && 'text-blue-500',
+                        isCurrentMonth && dayOfWeek === 6 && 'text-red-500',
+                        isCurrentMonth && dayOfWeek < 5 && 'text-calm-700',
+                        isTodayDate && 'bg-accent text-white rounded-full w-6 h-6 flex items-center justify-center'
+                      )}
+                    >
+                      {format(dayDate, 'd')}
+                    </span>
+                  </div>
+                  {/* イベントエリア */}
+                  <div className="flex-1 flex flex-col gap-0.5 sm:gap-1 overflow-hidden">
+                    {/* Focus Items first */}
+                    {dayItems.slice(0, visibleItemCount).map((item) => (
+                      <EventPill
+                        key={item.id}
+                        title={item.title}
+                        colorClass={clsx(
+                          item.status === 'done' && 'bg-green-100 text-green-700',
+                          item.status === 'skipped' && 'bg-calm-100 text-calm-400',
+                          item.status === 'planned' && item.area === 'private' && 'bg-accent-light text-accent-dark',
+                          item.status === 'planned' && item.area === 'work' && 'bg-blue-100 text-blue-700'
+                        )}
+                        isCompleted={item.status === 'done' || item.status === 'skipped'}
+                      />
+                    ))}
+                    {/* Events */}
+                    {dayEvents.slice(0, visibleEventCount).map((event, idx) => {
+                      const colors = EVENT_CATEGORY_COLORS[event.category]
+                      return (
+                        <EventPill
+                          key={`event-${idx}`}
+                          title={event.name}
+                          colorClass={`${colors.bg} ${colors.text}`}
+                        />
+                      )
+                    })}
+                    {overflowCount > 0 && (
+                      <div className="h-5 text-xs text-calm-500 hover:text-calm-700 flex items-center">
+                        +{overflowCount}件
                       </div>
                     )}
                   </div>
@@ -316,14 +501,15 @@ export function CalendarClient() {
             })}
           </div>
         ) : (
-          // Focus Items Calendar View
-          <div className="grid grid-cols-7 gap-1">
+          // Focus Items Calendar View (private/work)
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {calendarDays.map((dayDate) => {
               const dateStr = format(dayDate, 'yyyy-MM-dd')
               const dayItems = itemsByDate[dateStr] || []
               const isCurrentMonth = isSameMonth(dayDate, currentMonth)
               const isTodayDate = isToday(dayDate)
               const dayOfWeek = (dayDate.getDay() + 6) % 7
+              const overflowCount = dayItems.length - maxVisibleItems
 
               return (
                 <button
@@ -331,13 +517,15 @@ export function CalendarClient() {
                   type="button"
                   onClick={() => handleDayClick(dayDate)}
                   className={clsx(
-                    'min-h-24 p-2 rounded-lg text-left transition-all',
+                    'min-h-[100px] sm:min-h-[120px] p-1 sm:p-2 rounded-lg text-left transition-all flex flex-col',
                     'hover:bg-calm-100 focus:outline-none focus:ring-2 focus:ring-accent/30',
                     isCurrentMonth ? 'bg-white' : 'bg-calm-50/50',
-                    isTodayDate && 'ring-2 ring-accent'
+                    isTodayDate && 'bg-accent/10 ring-2 ring-accent',
+                    !isCurrentMonth && 'opacity-40'
                   )}
                 >
-                  <div className="flex items-center justify-between mb-1">
+                  {/* 日付数字 */}
+                  <div className="flex-shrink-0 mb-1">
                     <span
                       className={clsx(
                         'text-sm font-medium',
@@ -351,24 +539,23 @@ export function CalendarClient() {
                       {format(dayDate, 'd')}
                     </span>
                   </div>
-                  <div className="space-y-1">
-                    {dayItems.slice(0, 3).map((item) => (
-                      <div
+                  {/* イベントエリア */}
+                  <div className="flex-1 flex flex-col gap-0.5 sm:gap-1 overflow-hidden">
+                    {dayItems.slice(0, maxVisibleItems).map((item) => (
+                      <EventPill
                         key={item.id}
-                        className={clsx(
-                          'text-xs px-1.5 py-0.5 rounded truncate',
-                          item.status === 'done' && 'bg-green-100 text-green-700 line-through',
-                          item.status === 'skipped' && 'bg-calm-100 text-calm-400 line-through',
+                        title={item.title}
+                        colorClass={clsx(
+                          item.status === 'done' && 'bg-green-100 text-green-700',
+                          item.status === 'skipped' && 'bg-calm-100 text-calm-400',
                           item.status === 'planned' && 'bg-accent-light text-accent-dark'
                         )}
-                        title={item.title}
-                      >
-                        {item.title}
-                      </div>
+                        isCompleted={item.status === 'done' || item.status === 'skipped'}
+                      />
                     ))}
-                    {dayItems.length > 3 && (
-                      <div className="text-xs text-calm-400">
-                        +{dayItems.length - 3}件
+                    {overflowCount > 0 && (
+                      <div className="h-5 text-xs text-calm-500 hover:text-calm-700 flex items-center">
+                        +{overflowCount}件
                       </div>
                     )}
                   </div>
@@ -381,7 +568,7 @@ export function CalendarClient() {
 
       {/* Legend */}
       {tab === 'events' ? (
-        <div className="flex flex-wrap justify-center gap-3 text-xs text-calm-500">
+        <div className="flex flex-wrap justify-center gap-3 text-xs text-calm-500 px-2 sm:px-0">
           {(Object.entries(EVENT_CATEGORY_COLORS) as [EventCategory, typeof EVENT_CATEGORY_COLORS[EventCategory]][]).map(
             ([category, colors]) => (
               <span key={category} className="flex items-center gap-1">
@@ -391,8 +578,33 @@ export function CalendarClient() {
             )
           )}
         </div>
+      ) : tab === 'all' ? (
+        <div className="space-y-2 px-2 sm:px-0">
+          <div className="flex justify-center gap-4 text-xs text-calm-500">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-accent-light rounded" /> プライベート
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-blue-100 rounded" /> 仕事
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 bg-green-100 rounded" /> 完了
+            </span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3 text-xs text-calm-400">
+            {(Object.entries(EVENT_CATEGORY_COLORS) as [EventCategory, typeof EVENT_CATEGORY_COLORS[EventCategory]][]).slice(0, 6).map(
+              ([category, colors]) => (
+                <span key={category} className="flex items-center gap-1">
+                  <span className={clsx('w-2 h-2 rounded', colors.bg)} />
+                  {colors.label}
+                </span>
+              )
+            )}
+            <span>...</span>
+          </div>
+        </div>
       ) : (
-        <div className="flex justify-center gap-4 text-xs text-calm-500">
+        <div className="flex justify-center gap-4 text-xs text-calm-500 px-2 sm:px-0">
           <span className="flex items-center gap-1">
             <span className="w-3 h-3 bg-accent-light rounded" /> 予定
           </span>
@@ -497,6 +709,98 @@ export function CalendarClient() {
         <ModalFooter>
           <Button variant="ghost" onClick={() => setIsEventModalOpen(false)}>
             閉じる
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Day Agenda Modal - 当日一覧モーダル */}
+      <Modal open={isDayModalOpen} onClose={() => setIsDayModalOpen(false)}>
+        <ModalHeader>
+          <ModalTitle>
+            {selectedDate && format(selectedDate, 'M月d日(E)', { locale: ja })}
+          </ModalTitle>
+        </ModalHeader>
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          {/* Focus Items */}
+          {selectedDayItems.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-calm-600">予定</h4>
+              {selectedDayItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={clsx(
+                    'p-3 rounded-lg',
+                    item.status === 'done' && 'bg-green-100',
+                    item.status === 'skipped' && 'bg-calm-100',
+                    item.status === 'planned' && item.area === 'private' && 'bg-accent-light',
+                    item.status === 'planned' && item.area === 'work' && 'bg-blue-100'
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={clsx(
+                        'text-xs px-2 py-0.5 rounded-full bg-white/50',
+                        item.area === 'private' ? 'text-accent-dark' : 'text-blue-700'
+                      )}
+                    >
+                      {item.area === 'private' ? 'プライベート' : '仕事'}
+                    </span>
+                    <span
+                      className={clsx(
+                        'font-medium',
+                        item.status === 'done' && 'text-green-700 line-through',
+                        item.status === 'skipped' && 'text-calm-400 line-through',
+                        item.status === 'planned' && item.area === 'private' && 'text-accent-dark',
+                        item.status === 'planned' && item.area === 'work' && 'text-blue-700'
+                      )}
+                    >
+                      {item.title}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Events */}
+          {selectedDayEvents.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-calm-600">イベント</h4>
+              {selectedDayEvents.map((event, idx) => {
+                const colors = EVENT_CATEGORY_COLORS[event.category]
+                return (
+                  <div
+                    key={idx}
+                    className={clsx('p-3 rounded-lg', colors.bg)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={clsx('text-xs px-2 py-0.5 rounded-full bg-white/50', colors.text)}>
+                        {colors.label}
+                      </span>
+                      <span className={clsx('font-medium', colors.text)}>{event.name}</span>
+                    </div>
+                    {event.description && (
+                      <p className={clsx('mt-1 text-sm opacity-80', colors.text)}>
+                        {event.description}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {/* 予定がない場合 */}
+          {selectedDayItems.length === 0 && selectedDayEvents.length === 0 && (
+            <div className="py-8 text-center text-calm-400">
+              この日の予定はありません
+            </div>
+          )}
+        </div>
+        <ModalFooter>
+          <Button variant="ghost" onClick={() => setIsDayModalOpen(false)}>
+            閉じる
+          </Button>
+          <Button onClick={openAddModalFromDay}>
+            ＋ 追加
           </Button>
         </ModalFooter>
       </Modal>
