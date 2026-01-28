@@ -58,6 +58,15 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
   const [hasChanges, setHasChanges] = useState(false)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isInitializedRef = useRef(false)
+  const isFirstRenderRef = useRef(true)
+
+  // Mark first render complete after a short delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isFirstRenderRef.current = false
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Convert database nodes to React Flow format
   useEffect(() => {
@@ -128,7 +137,7 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
           change.type === 'dimensions' && 'dimensions' in change && change.dimensions !== undefined
       )
 
-      // Update node data with new dimensions
+      // Update node data with new dimensions (but don't mark as changed on first render)
       if (dimensionChanges.length > 0) {
         setNodes((nds) =>
           nds.map((node) => {
@@ -148,7 +157,10 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
             return node
           })
         )
-        markChanged()
+        // Only mark as changed after first render is complete
+        if (!isFirstRenderRef.current) {
+          markChanged()
+        }
       }
 
       if (hasDragChange) {
