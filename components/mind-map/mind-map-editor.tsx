@@ -60,11 +60,11 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
   const isInitializedRef = useRef(false)
   const isFirstRenderRef = useRef(true)
 
-  // Mark first render complete after a short delay
+  // Mark first render complete after React Flow finishes initializing
   useEffect(() => {
     const timer = setTimeout(() => {
       isFirstRenderRef.current = false
-    }, 500)
+    }, 2000) // Wait longer for React Flow initialization
     return () => clearTimeout(timer)
   }, [])
 
@@ -102,9 +102,9 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
     setEdges(flowEdges)
   }, [initialNodes, setNodes, setEdges])
 
-  // Auto-save with debounce
+  // Auto-save with debounce (skip during first render)
   useEffect(() => {
-    if (!hasChanges) return
+    if (!hasChanges || isFirstRenderRef.current) return
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
