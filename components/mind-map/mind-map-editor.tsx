@@ -419,6 +419,9 @@ function MindMapEditorInner({ initialNodes, onSave, saving }: MindMapEditorProps
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        onNodeDoubleClick={(e) => e.stopPropagation()}
+        onPaneClick={(e) => e.stopPropagation()}
+        deleteKeyCode={null}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         minZoom={0.1}
