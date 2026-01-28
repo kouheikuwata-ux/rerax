@@ -1,10 +1,50 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Component, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import dynamic from 'next/dynamic'
 import { getMindMap, saveMindMap } from '@/app/actions/mind-map'
 import { MindMapNode, EntityType } from '@/lib/types'
+
+// Error boundary to catch React Flow errors
+interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+}
+
+class MindMapErrorBoundary extends Component<{ children: ReactNode; onError?: () => void }, ErrorBoundaryState> {
+  constructor(props: { children: ReactNode; onError?: () => void }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('MindMap Error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center bg-calm-50">
+          <div className="text-center p-4">
+            <p className="text-red-500 mb-2">マインドマップの読み込みに失敗しました</p>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="px-4 py-2 bg-calm-600 text-white rounded-lg hover:bg-calm-700"
+            >
+              再試行
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 // Dynamically import MindMapEditor with no SSR to avoid CSS import issues
 const MindMapEditor = dynamic(
@@ -43,14 +83,23 @@ export function MindMapModal({
   useEffect(() => {
     if (open && !cssLoaded) {
       const linkId = 'xyflow-styles'
-      if (!document.getElementById(linkId)) {
+      const existingLink = document.getElementById(linkId) as HTMLLinkElement | null
+
+      if (existingLink) {
+        // CSS already loaded
+        setCssLoaded(true)
+      } else {
         const link = document.createElement('link')
         link.id = linkId
         link.rel = 'stylesheet'
         link.href = 'https://cdn.jsdelivr.net/npm/@xyflow/react@12/dist/style.min.css'
+        link.onload = () => setCssLoaded(true)
+        link.onerror = () => {
+          console.error('Failed to load React Flow CSS')
+          setCssLoaded(true) // Continue anyway
+        }
         document.head.appendChild(link)
       }
-      setCssLoaded(true)
     }
   }, [open, cssLoaded])
 
@@ -143,16 +192,18 @@ export function MindMapModal({
 
       {/* Editor */}
       <div className="flex-1 relative">
-        {loading ? (
+        {loading || !cssLoaded ? (
           <div className="absolute inset-0 flex items-center justify-center bg-calm-50">
             <div className="text-calm-500">読み込み中...</div>
           </div>
         ) : (
-          <MindMapEditor
-            initialNodes={nodes}
-            onSave={handleSave}
-            saving={saving}
-          />
+          <MindMapErrorBoundary>
+            <MindMapEditor
+              initialNodes={nodes}
+              onSave={handleSave}
+              saving={saving}
+            />
+          </MindMapErrorBoundary>
         )}
       </div>
     </div>,
