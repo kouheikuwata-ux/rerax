@@ -164,7 +164,7 @@ export function DailyNoteCard({ date, initialNotes }: DailyNoteCardProps) {
             </div>
             <p className="text-calm-400 text-sm mb-4">メモがありません</p>
             <Button
-              variant="default"
+              variant="primary"
               size="lg"
               onClick={handleCreateNote}
               loading={isCreating}
