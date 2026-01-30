@@ -274,6 +274,34 @@ export const UpdateMindMapNodeSchema = z.object({
 export type UpdateMindMapNode = z.infer<typeof UpdateMindMapNodeSchema>
 
 // ============================================
+// Daily Note (今日のメモ)
+// ============================================
+
+export const DailyNoteSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  title: z.string().nullable(),
+  content: z.string(),
+  color: z.string().nullable(),
+  order: z.number().int().min(0),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+})
+export type DailyNote = z.infer<typeof DailyNoteSchema>
+
+export const CreateDailyNoteSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  content: z.string(),
+})
+export type CreateDailyNote = z.infer<typeof CreateDailyNoteSchema>
+
+export const UpdateDailyNoteSchema = z.object({
+  content: z.string(),
+})
+export type UpdateDailyNote = z.infer<typeof UpdateDailyNoteSchema>
+
+// ============================================
 // AI Planner Types
 // ============================================
 
