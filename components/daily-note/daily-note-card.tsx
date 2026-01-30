@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { DailyNote } from '@/lib/types'
-import { addDailyNote, saveDailyNote, removeDailyNote } from '@/app/actions/daily-notes'
+import { addDailyNote, removeDailyNote } from '@/app/actions/daily-notes'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { FileText, Plus, Trash2, ExternalLink } from 'lucide-react'
+import { FileText, Plus, Trash2, ChevronRight } from 'lucide-react'
 
 interface DailyNoteCardProps {
   date: string
@@ -21,6 +22,8 @@ interface NoteItemProps {
 }
 
 function NoteItem({ note, onDelete }: NoteItemProps) {
+  const [isDeleting, setIsDeleting] = useState(false)
+
   // Get display title (title or first line of content)
   const getDisplayTitle = () => {
     if (note.title) {
@@ -29,8 +32,8 @@ function NoteItem({ note, onDelete }: NoteItemProps) {
     // Strip HTML tags and get first line
     const plainText = note.content.replace(/<[^>]*>/g, '')
     const firstLine = plainText.split('\n')[0]
-    if (firstLine.length > 50) {
-      return firstLine.substring(0, 50) + '...'
+    if (firstLine.length > 30) {
+      return firstLine.substring(0, 30) + '...'
     }
     return firstLine || '(空のメモ)'
   }
@@ -52,74 +55,66 @@ function NoteItem({ note, onDelete }: NoteItemProps) {
     })
   }
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (confirm('このメモを削除しますか？')) {
-      await onDelete(note.id)
+      setIsDeleting(true)
+      try {
+        await onDelete(note.id)
+      } finally {
+        setIsDeleting(false)
+      }
     }
   }
 
   return (
-    <Link href={`/notes/${note.id}`}>
-      <div
-        className="flex items-center gap-3 p-3 rounded-lg border border-calm-200 hover:border-accent/50 hover:shadow-sm transition-all cursor-pointer group"
-        style={{ backgroundColor: note.color || '#ffffff' }}
-      >
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-medium">
+    <div
+      className="flex items-center gap-2 p-3 rounded-lg border border-calm-200 active:bg-calm-50 transition-all"
+      style={{ backgroundColor: note.color || '#ffffff' }}
+    >
+      {/* Main content - links to editor */}
+      <Link href={`/notes/${note.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-medium text-lg">
           {getFirstChar()}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-calm-700 truncate group-hover:text-accent transition-colors">
+          <p className="text-sm font-medium text-calm-700 truncate">
             {getDisplayTitle()}
           </p>
           <p className="text-xs text-calm-400">{formatTime(note.createdAt)}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <ExternalLink className="h-4 w-4 text-calm-300 group-hover:text-accent transition-colors" />
-          <button
-            onClick={handleDelete}
-            className="p-1 rounded hover:bg-red-50 text-calm-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </Link>
+        <ChevronRight className="h-5 w-5 text-calm-300 flex-shrink-0" />
+      </Link>
+
+      {/* Delete button - always visible on mobile */}
+      <button
+        onClick={handleDelete}
+        onTouchEnd={handleDelete}
+        disabled={isDeleting}
+        className="p-2 rounded-lg bg-calm-100 hover:bg-red-50 active:bg-red-100 text-calm-400 hover:text-red-500 active:text-red-600 transition-colors flex-shrink-0 touch-manipulation"
+        aria-label="削除"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    </div>
   )
 }
 
 export function DailyNoteCard({ date, initialNotes }: DailyNoteCardProps) {
+  const router = useRouter()
   const [notes, setNotes] = useState<DailyNote[]>(initialNotes)
-  const [isAdding, setIsAdding] = useState(false)
-  const [newContent, setNewContent] = useState('')
   const [isCreating, setIsCreating] = useState(false)
-  const newNoteRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-resize new note textarea
-  useEffect(() => {
-    if (isAdding && newNoteRef.current) {
-      newNoteRef.current.style.height = 'auto'
-      newNoteRef.current.style.height = `${Math.max(80, newNoteRef.current.scrollHeight)}px`
-    }
-  }, [newContent, isAdding])
-
-  const handleAddNote = async () => {
-    if (!newContent.trim()) {
-      toast.error('メモの内容を入力してください')
-      return
-    }
-
+  // Create new note and navigate to editor
+  const handleCreateNote = async () => {
     setIsCreating(true)
     try {
-      const newNote = await addDailyNote(date, newContent)
-      setNotes([...notes, newNote])
-      setNewContent('')
-      setIsAdding(false)
-      toast.success('メモを追加しました')
+      const newNote = await addDailyNote(date, '')
+      // Navigate to editor page immediately
+      router.push(`/notes/${newNote.id}`)
     } catch (error) {
-      toast.error('メモの追加に失敗しました')
-    } finally {
+      toast.error('メモの作成に失敗しました')
       setIsCreating(false)
     }
   }
@@ -132,16 +127,6 @@ export function DailyNoteCard({ date, initialNotes }: DailyNoteCardProps) {
     } catch (error) {
       toast.error('メモの削除に失敗しました')
     }
-  }
-
-  const startAdding = () => {
-    setIsAdding(true)
-    setTimeout(() => newNoteRef.current?.focus(), 0)
-  }
-
-  const cancelAdding = () => {
-    setIsAdding(false)
-    setNewContent('')
   }
 
   return (
@@ -158,45 +143,35 @@ export function DailyNoteCard({ date, initialNotes }: DailyNoteCardProps) {
               <span className="text-xs text-calm-400 ml-1">({notes.length})</span>
             )}
           </div>
-          {!isAdding && (
-            <Button variant="ghost" size="sm" onClick={startAdding}>
-              <Plus className="h-4 w-4 mr-1" />
-              追加
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCreateNote}
+            loading={isCreating}
+            className="touch-manipulation"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            追加
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {/* Add new note form */}
-        {isAdding && (
-          <div className="mb-4 p-3 border border-accent/30 rounded-lg bg-accent/5">
-            <textarea
-              ref={newNoteRef}
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              placeholder="新しいメモを入力..."
-              className="w-full min-h-[80px] p-2 rounded border border-calm-200 bg-white
-                         focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent
-                         resize-none text-calm-700 text-sm leading-relaxed"
-            />
-            <div className="flex justify-end gap-2 mt-2">
-              <Button variant="ghost" size="sm" onClick={cancelAdding}>
-                キャンセル
-              </Button>
-              <Button size="sm" onClick={handleAddNote} loading={isCreating}>
-                保存
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Notes list */}
-        {notes.length === 0 && !isAdding ? (
-          <div className="text-center py-6">
-            <p className="text-calm-400 text-sm mb-3">メモがありません</p>
-            <Button variant="secondary" size="sm" onClick={startAdding}>
-              <Plus className="h-4 w-4 mr-1" />
-              メモを追加
+        {notes.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-calm-100 flex items-center justify-center">
+              <FileText className="h-8 w-8 text-calm-300" />
+            </div>
+            <p className="text-calm-400 text-sm mb-4">メモがありません</p>
+            <Button
+              variant="default"
+              size="lg"
+              onClick={handleCreateNote}
+              loading={isCreating}
+              className="touch-manipulation"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              新しいメモを作成
             </Button>
           </div>
         ) : (
