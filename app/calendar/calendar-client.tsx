@@ -112,17 +112,9 @@ export function CalendarClient() {
         const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
         const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
 
-        if (tab === 'all') {
-          // Fetch both private and work items
-          const [privateData, workData] = await Promise.all([
-            getCalendarData(monthStart, monthEnd, 'private'),
-            getCalendarData(monthStart, monthEnd, 'work'),
-          ])
-          setFocusItems([...privateData, ...workData])
-        } else {
-          const data = await getCalendarData(monthStart, monthEnd, tab as Area)
-          setFocusItems(data)
-        }
+        // Only fetch work items
+        const data = await getCalendarData(monthStart, monthEnd, 'work')
+        setFocusItems(data)
       } catch (error) {
         toast.error('データの取得に失敗しました')
       } finally {
@@ -154,7 +146,7 @@ export function CalendarClient() {
 
       setSelectedDayItems(items)
       setSelectedDayEvents(tab === 'all' ? events : [])
-      setSelectedArea(tab === 'all' ? 'private' : (tab as Area))
+      setSelectedArea('work')
       setIsDayModalOpen(true)
     }
   }
@@ -179,20 +171,10 @@ export function CalendarClient() {
       setNewItemTitle('')
       setIsAddModalOpen(false)
       // Refresh data
-      if (tab === 'all' || selectedArea === tab) {
-        const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
-        const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-        if (tab === 'all') {
-          const [privateData, workData] = await Promise.all([
-            getCalendarData(monthStart, monthEnd, 'private'),
-            getCalendarData(monthStart, monthEnd, 'work'),
-          ])
-          setFocusItems([...privateData, ...workData])
-        } else {
-          const data = await getCalendarData(monthStart, monthEnd, tab as Area)
-          setFocusItems(data)
-        }
-      }
+      const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
+      const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
+      const data = await getCalendarData(monthStart, monthEnd, 'work')
+      setFocusItems(data)
     } catch (error) {
       toast.error('エラーが発生しました')
     } finally {
@@ -264,14 +246,8 @@ export function CalendarClient() {
               const fetchData = async () => {
                 const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd')
                 const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd')
-                if (tab === 'all') {
-                  const [privateData, workData] = await Promise.all([
-                    getCalendarData(monthStart, monthEnd, 'private'),
-                    getCalendarData(monthStart, monthEnd, 'work'),
-                  ])
-                  setFocusItems([...privateData, ...workData])
-                } else if (tab !== 'events') {
-                  const data = await getCalendarData(monthStart, monthEnd, tab as Area)
+                if (tab !== 'events') {
+                  const data = await getCalendarData(monthStart, monthEnd, 'work')
                   setFocusItems(data)
                 }
               }
@@ -473,8 +449,7 @@ export function CalendarClient() {
                         colorClass={clsx(
                           item.status === 'done' && 'bg-green-100 text-green-700',
                           item.status === 'skipped' && 'bg-calm-100 text-calm-400',
-                          item.status === 'planned' && item.area === 'private' && 'bg-accent-light text-accent-dark',
-                          item.status === 'planned' && item.area === 'work' && 'bg-blue-100 text-blue-700'
+                          item.status === 'planned' && 'bg-blue-100 text-blue-700'
                         )}
                         isCompleted={item.status === 'done' || item.status === 'skipped'}
                       />
@@ -501,7 +476,7 @@ export function CalendarClient() {
             })}
           </div>
         ) : (
-          // Focus Items Calendar View (private/work)
+          // Focus Items Calendar View (work only)
           <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {calendarDays.map((dayDate) => {
               const dateStr = format(dayDate, 'yyyy-MM-dd')
@@ -700,26 +675,16 @@ export function CalendarClient() {
                     'p-3 rounded-lg',
                     item.status === 'done' && 'bg-green-100',
                     item.status === 'skipped' && 'bg-calm-100',
-                    item.status === 'planned' && item.area === 'private' && 'bg-accent-light',
-                    item.status === 'planned' && item.area === 'work' && 'bg-blue-100'
+                    item.status === 'planned' && 'bg-blue-100'
                   )}
                 >
                   <div className="flex items-center gap-2">
                     <span
                       className={clsx(
-                        'text-xs px-2 py-0.5 rounded-full bg-white/50',
-                        item.area === 'private' ? 'text-accent-dark' : 'text-blue-700'
-                      )}
-                    >
-                      {item.area === 'private' ? 'プライベート' : '仕事'}
-                    </span>
-                    <span
-                      className={clsx(
                         'font-medium',
                         item.status === 'done' && 'text-green-700 line-through',
                         item.status === 'skipped' && 'text-calm-400 line-through',
-                        item.status === 'planned' && item.area === 'private' && 'text-accent-dark',
-                        item.status === 'planned' && item.area === 'work' && 'text-blue-700'
+                        item.status === 'planned' && 'text-blue-700'
                       )}
                     >
                       {item.title}

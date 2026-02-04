@@ -2,7 +2,7 @@
 
 import { clsx } from 'clsx'
 
-export type CalendarTab = 'all' | 'private' | 'work' | 'events'
+export type CalendarTab = 'all' | 'work' | 'events'
 
 interface CalendarTabsProps {
   value: CalendarTab
