@@ -10,7 +10,6 @@ import { PlannerResult } from '@/lib/planner'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { AreaTabs } from '@/components/ui/area-tabs'
 import { FocusItemCard } from '@/components/focus/focus-item'
 import { MindMapModal } from '@/components/mind-map/mind-map-modal'
 import { AddFocusForm } from '@/components/focus/add-focus-form'
@@ -38,7 +37,7 @@ export function HomeClient({
   const router = useRouter()
   const { data: session } = useSession()
   const [isPending, startTransition] = useTransition()
-  const [area, setArea] = useState<Area>('private')
+  const [area, setArea] = useState<Area>('work')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [isAddingFocus, setIsAddingFocus] = useState(false)
   const [proposal, setProposal] = useState<PlannerResult | null>(null)
@@ -246,8 +245,7 @@ export function HomeClient({
         </div>
       )}
 
-      {/* Area Tabs */}
-      <AreaTabs value={area} onChange={setArea} />
+      {/* Area Tabs - hidden, only work area is used */}
 
       {isLoading ? (
         <div className="space-y-4">

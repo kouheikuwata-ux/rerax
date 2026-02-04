@@ -2,7 +2,7 @@
 
 import { clsx } from 'clsx'
 
-export type CalendarTab = 'private' | 'work' | 'events'
+export type CalendarTab = 'all' | 'private' | 'work' | 'events'
 
 interface CalendarTabsProps {
   value: CalendarTab
@@ -10,7 +10,7 @@ interface CalendarTabsProps {
 }
 
 const TAB_CONFIG: Array<{ key: CalendarTab; label: string; icon: string }> = [
-  { key: 'private', label: 'プライベート', icon: '🏠' },
+  { key: 'all', label: 'すべて', icon: '📋' },
   { key: 'work', label: '仕事', icon: '💼' },
   { key: 'events', label: 'イベント', icon: '📅' },
 ]

@@ -72,7 +72,7 @@ export function CalendarClient() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [newItemTitle, setNewItemTitle] = useState('')
   const [isAdding, setIsAdding] = useState(false)
-  const [selectedArea, setSelectedArea] = useState<Area>('private')
+  const [selectedArea, setSelectedArea] = useState<Area>('work')
   const [selectedEvents, setSelectedEvents] = useState<JapaneseEvent[]>([])
   const [isEventModalOpen, setIsEventModalOpen] = useState(false)
   // DayAgendaModal用の状態
@@ -582,9 +582,6 @@ export function CalendarClient() {
         <div className="space-y-2 px-2 sm:px-0">
           <div className="flex justify-center gap-4 text-xs text-calm-500">
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-accent-light rounded" /> プライベート
-            </span>
-            <span className="flex items-center gap-1">
               <span className="w-3 h-3 bg-blue-100 rounded" /> 仕事
             </span>
             <span className="flex items-center gap-1">
@@ -625,36 +622,7 @@ export function CalendarClient() {
           </ModalTitle>
         </ModalHeader>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-calm-600 mb-2">エリア</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedArea('private')}
-                className={clsx(
-                  'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-                  selectedArea === 'private'
-                    ? 'bg-accent text-white'
-                    : 'bg-calm-100 text-calm-600 hover:bg-calm-200'
-                )}
-              >
-                プライベート
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedArea('work')}
-                className={clsx(
-                  'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-                  selectedArea === 'work'
-                    ? 'bg-accent text-white'
-                    : 'bg-calm-100 text-calm-600 hover:bg-calm-200'
-                )}
-              >
-                仕事
-              </button>
-            </div>
-          </div>
-          <div>
+            <div>
             <label className="block text-sm text-calm-600 mb-1">
               フォーカス
             </label>
